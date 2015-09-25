@@ -25,6 +25,8 @@ public:
     virtual void drawUnderlay() = 0;
     virtual void drawOverlay(const QRect &rect) = 0;
     virtual bool preRender() = 0;
+    virtual void contentRotationStarted() = 0;
+    virtual void contentRotationFinished() = 0;
 
     // Signals
     virtual void viewInitialized() = 0;
@@ -196,6 +198,16 @@ public:
     bool preRender()
     {
         return view.preRender();
+    }
+
+    void contentRotationStarted()
+    {
+        view.contentRotationStarted();
+    }
+
+    void contentRotationFinished()
+    {
+        view.contentRotationFinished();
     }
 
     void useQmlMouse(bool value)

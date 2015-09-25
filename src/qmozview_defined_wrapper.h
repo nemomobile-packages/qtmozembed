@@ -132,7 +132,9 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void requestGLContext(bool& hasContext, QSize& viewPortSize); \
     void drawUnderlay(); \
     void drawOverlay(const QRect &rect); \
-    bool preRender();
+    bool preRender(); \
+    void contentRotationStarted(); \
+    void contentRotationFinished();
 
 #define Q_MOZ_VIEW_SIGNALS \
     void viewInitialized(); \
@@ -167,6 +169,6 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void horizontalScrollDecoratorChanged(); \
     void chromeGestureEnabledChanged(); \
     void chromeChanged(); \
-    void chromeGestureThresholdChanged();
+    void chromeGestureThresholdChanged(); \
 
 #endif /* qmozview_defined_wrapper_h */

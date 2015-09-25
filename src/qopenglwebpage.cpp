@@ -13,7 +13,11 @@
 #include <qglobal.h>
 #include <qqmlinfo.h>
 #include <QOpenGLContext>
+#if defined(QT_OPENGL_ES_2)
 #include <QOpenGLFunctions_ES2>
+#else
+#include <QOpenGLFunctions>
+#endif
 #include <QWindow>
 
 #include "qmozgrabresult.h"
@@ -45,6 +49,7 @@ QOpenGLWebPage::QOpenGLWebPage(QObject *parent)
   , mSizeUpdateScheduled(false)
   , mThrottlePainting(false)
   , mReadyToPaint(true)
+  , mRotating(false)
 {
     d->mContext = QMozContext::GetInstance();
     d->mHasContext = true;
@@ -148,7 +153,11 @@ void QOpenGLWebPage::drawUnderlay()
         return;
     }
 
+#if defined(QT_OPENGL_ES_2)
     QOpenGLFunctions_ES2* funcs = glContext->versionFunctions<QOpenGLFunctions_ES2>();
+#else
+    QOpenGLFunctions* funcs = glContext->functions();
+#endif
     if (funcs) {
         QColor bgColor = d->GetBackgroundColor();
         funcs->glClearColor(bgColor.redF(), bgColor.greenF(), bgColor.blueF(), 0.0);
@@ -160,6 +169,22 @@ bool QOpenGLWebPage::preRender()
 {
     QMutexLocker lock(&mReadyToPaintMutex);
     return mReadyToPaint;
+}
+
+void QOpenGLWebPage::contentRotationStarted()
+{
+    if (!mRotating) {
+        mRotating = true;
+        Q_EMIT rotatingChanged();
+    }
+}
+
+void QOpenGLWebPage::contentRotationFinished()
+{
+    if (mRotating) {
+        mRotating = false;
+        Q_EMIT rotatingChanged();
+    }
 }
 
 /*!
@@ -306,6 +331,7 @@ void QOpenGLWebPage::setSize(const QSizeF &size)
     bool heightWillChanged = d->mSize.height() != size.height();
 
     d->mSize = size;
+    d->mGLSurfaceSize = mWindow ? mWindow->size() : size.toSize();
     scheduleSizeUpdate();
 
     if (widthWillChanged) {
@@ -336,6 +362,7 @@ void QOpenGLWebPage::setWindow(QWindow *window)
     }
 
     mWindow = window;
+    d->mGLSurfaceSize = mWindow->size();
     Q_EMIT windowChanged();
 }
 
@@ -457,27 +484,7 @@ void QOpenGLWebPage::setInputMethodHints(Qt::InputMethodHints hints)
 
 void QOpenGLWebPage::updateContentOrientation(Qt::ScreenOrientation orientation)
 {
-    if (!mWindow) {
-        qDebug() << "No window set, cannot update content orientation.";
-        return;
-    }
-
-    QSize surfaceSize;
-    QSize windowSize = mWindow->size();
-
-    int minValue = qMin(windowSize.width(), windowSize.height());
-    int maxValue = qMax(windowSize.width(), windowSize.height());
-
-    if (orientation == Qt::LandscapeOrientation || orientation == Qt::InvertedLandscapeOrientation) {
-        surfaceSize.setWidth(maxValue);
-        surfaceSize.setHeight(minValue);
-    } else {
-        surfaceSize.setWidth(minValue);
-        surfaceSize.setHeight(maxValue);
-    }
-
-    setSize(surfaceSize);
-    setSurfaceSize(surfaceSize, orientation);
+    d->SetContentOrientation(orientation);
 }
 
 void QOpenGLWebPage::inputMethodEvent(QInputMethodEvent* event)
@@ -816,23 +823,5 @@ void QOpenGLWebPage::scheduleSizeUpdate()
     if (!mSizeUpdateScheduled) {
         QMetaObject::invokeMethod(this, "updateSize", Qt::QueuedConnection);
         mSizeUpdateScheduled = true;
-    }
-}
-
-/*!
-    \fn void QOpenGLWebPage::setSurfaceSize()
-
-    Sets surface size and orientation.
-
-    Set surface size as soon as the page is created. The page cannot be
-    shown until surface is given.
-*/
-void QOpenGLWebPage::setSurfaceSize(const QSize &surfaceSize, Qt::ScreenOrientation orientation)
-{
-    if ((d->mGLSurfaceSize != surfaceSize) || (d->mOrientation != orientation)) {
-        d->mGLSurfaceSize = surfaceSize;
-        d->mOrientation = orientation;
-        d->mOrientationDirty = true;
-        scheduleSizeUpdate();
     }
 }

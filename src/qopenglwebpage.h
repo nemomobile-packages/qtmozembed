@@ -38,6 +38,7 @@ class QOpenGLWebPage : public QObject
     Q_PROPERTY(QWindow *window READ window WRITE setWindow NOTIFY windowChanged FINAL)
     Q_PROPERTY(bool throttlePainting READ throttlePainting WRITE setThrottlePainting NOTIFY throttlePaintingChanged FINAL)
     Q_PROPERTY(bool readyToPaint READ readyToPaint WRITE setReadyToPaint NOTIFY readyToPaintChanged FINAL)
+    Q_PROPERTY(bool rotating READ rotating NOTIFY rotatingChanged FINAL)
 
     Q_MOZ_VIEW_PRORERTIES
 
@@ -79,6 +80,8 @@ public:
     bool readyToPaint() const;
     void setReadyToPaint(bool);
 
+    bool rotating() const { return mRotating; }
+
     void initialize();
 
     virtual bool event(QEvent *event);
@@ -117,6 +120,7 @@ Q_SIGNALS:
     void afterRendering(const QRect &rect);
     void throttlePaintingChanged();
     void readyToPaintChanged();
+    void rotatingChanged();
 
     Q_MOZ_VIEW_SIGNALS
 
@@ -128,7 +132,6 @@ private Q_SLOTS:
 
 private:
     void scheduleSizeUpdate();
-    void setSurfaceSize(const QSize &surfaceSize, Qt::ScreenOrientation orientation);
 
     QGraphicsMozViewPrivate* d;
     friend class QGraphicsMozViewPrivate;
@@ -145,6 +148,7 @@ private:
     bool mThrottlePainting;
     mutable QMutex mReadyToPaintMutex;
     bool mReadyToPaint;
+    bool mRotating;
 
     Q_DISABLE_COPY(QOpenGLWebPage)
 };

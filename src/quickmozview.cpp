@@ -146,6 +146,14 @@ bool QuickMozView::preRender()
     return true;
 }
 
+void QuickMozView::contentRotationStarted()
+{
+}
+
+void QuickMozView::contentRotationFinished()
+{
+}
+
 void QuickMozView::updateGLContextInfo(QOpenGLContext* ctx)
 {
     d->mHasContext = ctx != nullptr && ctx->surface() != nullptr;
@@ -265,7 +273,11 @@ QuickMozView::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* data)
 
     TextureNodeType* n = static_cast<TextureNodeType*>(oldNode);
     if (!n) {
+#if defined(QT_OPENGL_ES_2)
         n = new TextureNodeType();
+#else
+        n = new TextureNodeType(this);
+#endif
         connect(this, SIGNAL(textureReady(int,QSize)), n, SLOT(newTexture(int,QSize)), Qt::DirectConnection);
         connect(window(), SIGNAL(beforeRendering()), n, SLOT(prepareNode()), Qt::DirectConnection);
     }
